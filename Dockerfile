@@ -1,4 +1,3 @@
-# 使用官方 Python```
 # 使用官方 Python 镜像
 FROM python:3.8-slim
 
@@ -17,4 +16,3 @@ EXPOSE 5000
 
 # 运行应用
 CMD ["python", "fs.py"]
-```
