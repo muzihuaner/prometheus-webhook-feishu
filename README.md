@@ -87,7 +87,7 @@
 
     ```bash
     docker run -d -p 5000:5000 \
-      -v $(pwd)/prometheus-webhook-feishu/config.json:/app/config.json \
+      -v /root/prometheus-webhook-feishu/:/app/ \
       --name prometheus-webhook-feishu \
       prometheus-webhook-feishu
     ```
