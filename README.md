@@ -72,6 +72,24 @@
         webhook_configs:
           - url: 'http://<你的服务器IP>:5000/webhook'
     ```
+    或
+    ```yaml
+    global:
+     resolve_timeout: 1m
+    route:
+    receiver: feishu-webhook
+    group_by:
+        - alertname
+    group_wait: 5s
+    group_interval: 1m
+    repeat_interval: 30m
+    receivers:
+    - name: feishu-webhook
+        webhook_configs:
+        - url: http://IP:5000/webhook
+            send_resolved: true
+
+    ```
 
 ## Docker 部署
 
