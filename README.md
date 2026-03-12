@@ -41,21 +41,31 @@
     - `FEISHU_WEBHOOK_URL`: 你的飞书机器人 Webhook URL。
     - `FEISHU_CARD_TEMPLATE`: 自定义飞书卡片的消息模板。
 
-## 使用方法
 
-1.  **运行 Webhook 服务：**
+4. **构建 Docker 镜像：**
 
     ```bash
-    python fs.py
+    docker build -t prometheus-webhook-feishu .
     ```
 
-    服务将在 `0.0.0.0:5000` 上启动。
+5.  **运行 Docker 容器：**
 
-2.  **访问管理界面：**
+    在运行容器时，你需要将 `config.json` 文件挂载到容器中。
+
+    ```bash
+    docker run -d -p 5000:5000 \
+      -v /root/prometheus-webhook-feishu/:/app/ \
+      --name prometheus-webhook-feishu \
+      prometheus-webhook-feishu
+    ```
+
+    服务将在你的 Docker 主机的 `5000` 端口上访问。
+
+6.  **访问管理界面：**
 
     在浏览器中打开 `http://<你的服务器IP>:5000`，你将看到应用的首页。点击链接进入登录页面，使用 `config.json` 中配置的用户名和密码登录。
 
-3.  **配置 Prometheus Alertmanager：**
+7.  **配置 Prometheus Alertmanager：**
 
     在你的 Alertmanager 配置文件 (`alertmanager.yml`) 中，添加一个指向该服务的 Webhook 接收器。
 
@@ -84,26 +94,6 @@
 
     ```
 
-## Docker 部署
-
-1.  **构建 Docker 镜像：**
-
-    ```bash
-    docker build -t prometheus-webhook-feishu .
-    ```
-
-2.  **运行 Docker 容器：**
-
-    在运行容器时，你需要将 `config.json` 文件挂载到容器中。
-
-    ```bash
-    docker run -d -p 5000:5000 \
-      -v /root/prometheus-webhook-feishu/:/app/ \
-      --name prometheus-webhook-feishu \
-      prometheus-webhook-feishu
-    ```
-
-    服务将在你的 Docker 主机的 `5000` 端口上访问。
 
 ## 许可证
 
