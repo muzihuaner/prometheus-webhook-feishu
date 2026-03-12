@@ -15,8 +15,7 @@
 
 ## 环境要求
 
-- Python 3.6+
-- Pip
+- Docker
 
 ## 安装与配置
 
@@ -27,13 +26,7 @@
     cd prometheus-webhook-feishu
     ```
 
-2.  **安装依赖：**
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3.  **创建配置文件：**
+2.  **创建配置文件：**
 
     复制 `config.example.json` 并重命名为 `config.json`。
 
@@ -41,7 +34,7 @@
     cp config.example.json config.json
     ```
 
-4.  **编辑 `config.json`：**
+3.  **编辑 `config.json`：**
 
     - `USERNAME`: 设置管理页面的登录用户名。
     - `PASSWORD`: 设置管理页面的登录密码。
