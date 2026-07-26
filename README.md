@@ -59,13 +59,22 @@
       prometheus-webhook-feishu
     ```
 
+在线镜像
+
+    ```bash
+    docker run -d -p 5000:5000 \
+      -v /root/prometheus-webhook-feishu/:/app/ \
+      --name prometheus-webhook-feishu \
+      muzihuaner/prometheus-webhook-feishu
+    ```
+
     服务将在你的 Docker 主机的 `5000` 端口上访问。
 
-6.  **访问管理界面：**
+5.  **访问管理界面：**
 
     在浏览器中打开 `http://<你的服务器IP>:5000`，你将看到应用的首页。点击链接进入登录页面，使用 `config.json` 中配置的用户名和密码登录。
 
-7.  **配置 Prometheus Alertmanager：**
+6.  **配置 Prometheus Alertmanager：**
 
     在你的 Alertmanager 配置文件 (`alertmanager.yml`) 中，添加一个指向该服务的 Webhook 接收器。
 
