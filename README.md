@@ -120,6 +120,7 @@ cd go
 docker build -t prometheus-webhook-feishu .
 docker run -d -p 5000:5000 \
   -v $(pwd)/config.json:/app/config.json \
+  -v $(pwd)/alerts.json:/app/alerts.json \
   --name prometheus-webhook-feishu \
   prometheus-webhook-feishu
 ```
