@@ -104,9 +104,8 @@ PORT=5000 \
 ### 方式一：docker compose（推荐）
 
 ```bash
-cd go
 cp config.example.json config.json   # 先创建配置文件
-docker compose up -d --build
+docker compose up -d
 ```
 
 服务将在 `http://<服务器IP>:5000` 提供访问。

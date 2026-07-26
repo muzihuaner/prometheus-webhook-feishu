@@ -1,7 +1,6 @@
 services:
   prometheus-webhook-feishu:
-    build: .
-    image: prometheus-webhook-feishu:latest
+    image: muzihuaner/prometheus-webhook-feishu:latest
     container_name: prometheus-webhook-feishu
     ports:
       - "5000:5000"
