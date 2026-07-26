@@ -1,4 +1,4 @@
-# Prometheus Webhook for Feishu (Go 版)
+# Prometheus Webhook for Feishu
 
 一个用 **Go** 编写的高性能 Webhook 服务，接收 [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) 的告警通知，并将其格式化为**飞书（Lark）交互式卡片**推送到群里。同时提供带登录鉴权的 Web 管理界面，用于在线配置 Webhook URL、自定义卡片模板、并发送测试告警。
 
