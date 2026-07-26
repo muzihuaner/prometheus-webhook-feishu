@@ -1,0 +1,19 @@
+services:
+  prometheus-webhook-feishu:
+    build: .
+    image: prometheus-webhook-feishu:latest
+    container_name: prometheus-webhook-feishu
+    ports:
+      - "5000:5000"
+    environment:
+      # 可选：使用环境变量覆盖配置（无需修改 config.json）
+      # FEISHU_USERNAME: "admin"
+      # FEISHU_PASSWORD: "password"
+      # FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxx"
+      PORT: "5000"
+    volumes:
+      # 挂载你的 config.json（请先 cp config.example.json config.json）
+      - ./config.json:/app/config.json
+      # 挂载告警历史持久化文件（默认已提供空的 alerts.json）
+      - ./alerts.json:/app/alerts.json
+    restart: unless-stopped

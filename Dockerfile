@@ -1,18 +1,22 @@
-# 使用官方 Python 镜像
-FROM python:3.8-slim
+# ---- 构建阶段 ----
+FROM golang:1.21-alpine AS builder
 
-# 设置工作目录
-WORKDIR /app
-
-# 复制依赖文件并安装
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-
-# 复制所有项目文件
+WORKDIR /src
+COPY go.mod ./
+RUN go mod download || true
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/app ./cmd/server
 
-# 暴露端口
+# ---- 运行阶段 ----
+FROM alpine:latest
+WORKDIR /app
+RUN apk add --no-cache ca-certificates tzdata
+
+COPY --from=builder /out/app ./app
+COPY config.example.json ./config.example.json
+
+ENV CONFIG_FILE=/app/config.json
+ENV PORT=5000
+
 EXPOSE 5000
-
-# 运行应用
-CMD ["python", "fs.py"]
+CMD ["./app"]

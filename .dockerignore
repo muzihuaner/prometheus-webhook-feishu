@@ -1,0 +1,8 @@
+config.json
+*.exe
+*.test
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore

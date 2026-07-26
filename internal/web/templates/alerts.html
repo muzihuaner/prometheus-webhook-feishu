@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>告警历史</title>
+    <style>
+        {{template "layoutStyles" .}}
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+        .stat {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+        }
+        .stat .num { font-size: 30px; font-weight: 700; line-height: 1; }
+        .stat .lbl { color: var(--muted); font-size: 13px; margin-top: 8px; }
+        .stat::after { content: ""; position: absolute; right: -10px; top: -10px; width: 60px; height: 60px; border-radius: 50%; opacity: .12; }
+        .stat.total::after { background: var(--primary); }
+        .stat.ok::after { background: var(--success); }
+        .stat.bad::after { background: var(--failed); }
+        .stat.err::after { background: var(--error); }
+        .stat.total .num { color: var(--primary); }
+        .stat.ok .num { color: var(--success); }
+        .stat.bad .num { color: var(--failed); }
+        .stat.err .num { color: var(--error); }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+        .toolbar select, .toolbar input[type="text"] {
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px;
+            font-size: 14px; background: #f8fafc; color: var(--text);
+        }
+        .toolbar input[type="text"] { flex: 1; min-width: 200px; }
+        .toolbar .spacer { flex: 1; }
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 14px; }
+        thead th {
+            text-align: left; padding: 13px 16px; background: #f8fafc; color: #475569;
+            font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap;
+        }
+        tbody td { padding: 13px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody tr:last-child td { border-bottom: none; }
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .badge.s-success { background: var(--success-bg); color: #14532d; }
+        .badge.s-failed  { background: var(--failed-bg);  color: #7f1d1d; }
+        .badge.s-error   { background: var(--error-bg);   color: #7c2d12; }
+        .badge.k-firing  { background: #fee2e2; color: #991b1b; }
+        .badge.k-resolved{ background: #dcfce7; color: #14532d; }
+        .sev { font-weight: 600; }
+        .sev.critical { color: #dc2626; }
+        .sev.warning { color: #d97706; }
+        .sev.info, .sev.none { color: var(--muted); }
+        .link-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; font-weight: 600; padding: 0; }
+        .link-btn:hover { text-decoration: underline; }
+        .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+        .modal-mask { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+        .modal-mask.open { display: flex; }
+        .modal { background: #fff; border-radius: 14px; max-width: 640px; width: 100%; max-height: 85vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .modal-head { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-head h3 { margin: 0; font-size: 16px; }
+        .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); line-height: 1; }
+        .modal-body { padding: 22px; }
+        .kv { display: grid; grid-template-columns: 110px 1fr; gap: 10px 14px; font-size: 14px; margin-bottom: 18px; }
+        .kv .k { color: var(--muted); }
+        .kv .v { word-break: break-all; }
+        .detail-list { border-top: 1px solid var(--border); margin-top: 6px; }
+        .detail-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-item .name { font-weight: 600; }
+        .detail-item .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .err-box { background: var(--failed-bg); color: #7f1d1d; padding: 12px 14px; border-radius: 10px; font-size: 13px; word-break: break-all; }
+        .ok-box { background: var(--success-bg); color: #14532d; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
+        @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    {{template "topbar" .}}
+    <main class="content">
+        {{template "flash" .}}
+        <div class="stats">
+            <div class="stat total"><div class="num">{{.Total}}</div><div class="lbl">累计告警</div></div>
+            <div class="stat ok"><div class="num">{{.SuccessCount}}</div><div class="lbl">推送成功</div></div>
+            <div class="stat bad"><div class="num">{{.FailedCount}}</div><div class="lbl">推送失败</div></div>
+            <div class="stat err"><div class="num">{{.ErrorCount}}</div><div class="lbl">程序异常</div></div>
+        </div>
+
+        <div class="toolbar">
+            <select id="filter-status">
+                <option value="">全部推送状态</option>
+                <option value="success">成功</option>
+                <option value="failed">失败</option>
+                <option value="error">异常</option>
+            </select>
+            <select id="filter-kind">
+                <option value="">全部类型</option>
+                <option value="firing">触发 (firing)</option>
+                <option value="resolved">恢复 (resolved)</option>
+            </select>
+            <input type="text" id="search" placeholder="搜索告警名称 / 实例 / 详情…">
+            <button class="btn btn-ghost" id="refresh-btn">🔄 刷新</button>
+            <div class="spacer"></div>
+            <button class="btn btn-danger" id="clear-btn">🗑 清空历史</button>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>接收时间</th>
+                            <th>类型</th>
+                            <th>告警名称</th>
+                            <th>等级</th>
+                            <th>数量</th>
+                            <th>推送状态</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alert-body">
+                        <tr><td colspan="7" class="empty">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal-mask" id="modal">
+            <div class="modal">
+                <div class="modal-head">
+                    <h3>告警详情</h3>
+                    <button class="modal-close" id="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body"></div>
+            </div>
+        </div>
+    </main>
+    <script>
+        const statusText = { success: "推送成功", failed: "推送失败", error: "程序异常" };
+        const fmtTime = (s) => { const d = new Date(s); return isNaN(d) ? s : d.toLocaleString("zh-CN", { hour12: false }); };
+        const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+        let allRecords = [];
+        let currentRows = [];
+
+        async function load() {
+            const res = await fetch("/api/alerts");
+            const data = await res.json();
+            allRecords = data.records || [];
+            render();
+        }
+
+        function filterRecords() {
+            const fStatus = document.getElementById("filter-status").value;
+            const fKind = document.getElementById("filter-kind").value;
+            const q = document.getElementById("search").value.trim().toLowerCase();
+            return allRecords.filter(r => {
+                if (fStatus && r.push_status !== fStatus) return false;
+                if (fKind && r.status !== fKind) return false;
+                if (q) {
+                    const hay = (r.alertname + " " + (r.alerts || []).map(a => a.instance).join(" ") + " " + r.detail).toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+        }
+
+        function render() {
+            currentRows = filterRecords();
+            const body = document.getElementById("alert-body");
+            if (currentRows.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="empty">暂无符合条件的告警记录</td></tr>';
+                return;
+            }
+            body.innerHTML = currentRows.map((r, i) => {
+                const sev = (r.severity || "none").toLowerCase();
+                return `<tr>
+                    <td>${fmtTime(r.received_at)}</td>
+                    <td><span class="badge k-${r.status}">${r.status === "resolved" ? "恢复" : "触发"}</span></td>
+                    <td>${esc(r.alertname)}</td>
+                    <td><span class="sev ${sev}">${esc(r.severity || "-")}</span></td>
+                    <td>${r.count}</td>
+                    <td><span class="badge s-${r.push_status}">${statusText[r.push_status] || r.push_status}</span></td>
+                    <td><button class="link-btn" onclick="showDetail(${i})">查看</button></td>
+                </tr>`;
+            }).join("");
+        }
+
+        function showDetail(idx) {
+            const row = currentRows[idx];
+            if (!row) return;
+            const alertsHtml = (row.alerts || []).map(a => `
+                <div class="detail-item">
+                    <div class="name">${esc(a.alertname || "-")}</div>
+                    <div class="meta">等级: ${esc(a.severity || "-")} · 实例: ${esc(a.instance || "-")}${a.summary ? " · " + esc(a.summary) : ""}</div>
+                </div>`).join("") || '<div class="detail-item">无明细</div>';
+            const pushBox = row.push_status === "success"
+                ? `<div class="ok-box">${esc(row.detail)}</div>`
+                : `<div class="err-box">${esc(row.detail)}</div>`;
+            document.getElementById("modal-body").innerHTML = `
+                <div class="kv">
+                    <div class="k">接收时间</div><div class="v">${fmtTime(row.received_at)}</div>
+                    <div class="k">类型</div><div class="v">${row.status === "resolved" ? "恢复 (resolved)" : "触发 (firing)"}</div>
+                    <div class="k">告警数量</div><div class="v">${row.count}</div>
+                    <div class="k">推送状态</div><div class="v"><span class="badge s-${row.push_status}">${statusText[row.push_status] || row.push_status}</span></div>
+                </div>
+                <h3 style="font-size:14px;margin:0 0 8px;">推送结果</h3>
+                ${pushBox}
+                <h3 style="font-size:14px;margin:18px 0 8px;">包含告警 (${row.alerts ? row.alerts.length : 0})</h3>
+                <div class="detail-list">${alertsHtml}</div>`;
+            document.getElementById("modal").classList.add("open");
+        }
+
+        document.getElementById("modal-close").onclick = () => document.getElementById("modal").classList.remove("open");
+        document.getElementById("modal").onclick = (e) => { if (e.target.id === "modal") document.getElementById("modal").classList.remove("open"); };
+        document.getElementById("filter-status").onchange = render;
+        document.getElementById("filter-kind").onchange = render;
+        document.getElementById("search").oninput = render;
+        document.getElementById("refresh-btn").onclick = load;
+        document.getElementById("clear-btn").onclick = async () => {
+            if (!confirm("确定要清空全部告警历史吗？此操作不可恢复。")) return;
+            await fetch("/api/alerts/clear", { method: "POST" });
+            load();
+        };
+
+        load();
+    </script>
+</body>
+</html>
