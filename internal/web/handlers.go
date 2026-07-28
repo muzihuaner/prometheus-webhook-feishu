@@ -132,11 +132,10 @@ func (h *Handlers) test(w http.ResponseWriter, r *http.Request) {
 	payload := feishu.WebhookPayload{Status: "firing", Alerts: testAlerts}
 	rec := h.recordAndSend(payload, "测试告警")
 	if rec.PushStatus == store.PushSuccess {
-		auth.SetFlash(w, "测试通知已成功发送！", "success")
+		h.writeJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "测试通知已成功发送"})
 	} else {
-		auth.SetFlash(w, "测试通知发送失败: "+rec.Detail, "error")
+		h.writeJSON(w, http.StatusOK, map[string]string{"status": "error", "message": "测试通知发送失败: " + rec.Detail})
 	}
-	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 // ---- 告警历史 ----

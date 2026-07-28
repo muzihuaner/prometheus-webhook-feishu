@@ -8,57 +8,90 @@
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-            margin: 0; min-height: 100vh; color: #1e293b;
-            background: radial-gradient(1200px 600px at 80% -10%, #c7d2fe 0%, transparent 60%),
-                        radial-gradient(1000px 500px at 0% 110%, #ddd6fe 0%, transparent 55%),
-                        #f1f5f9;
-            display: flex; flex-direction: column;
+            margin: 0;
+            min-height: 100vh;
+            color: #0f172a;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
         }
-        .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .hero { text-align: center; padding: 60px 0; }
-        .logo { font-size: 56px; margin-bottom: 10px; }
-        h1 { font-size: 38px; margin: 0 0 16px; font-weight: 800; letter-spacing: .5px;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-        .lead { font-size: 17px; color: #475569; line-height: 1.7; max-width: 620px; margin: 0 auto 34px; }
-        .cta { display: inline-flex; gap: 14px; }
+        .wrap { max-width: 800px; margin: 0 auto; padding: 0 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .hero { text-align: center; padding: 80px 0 60px; }
+        .hero-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: #eff6ff;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-icon svg { width: 32px; height: 32px; color: #2563eb; }
+        h1 { font-size: 32px; margin: 0 0 12px; font-weight: 700; letter-spacing: -.3px; color: #0f172a; }
+        .lead { font-size: 16px; color: #475569; line-height: 1.7; max-width: 540px; margin: 0 auto 32px; }
+        .cta { display: inline-flex; gap: 12px; }
         .btn {
-            display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-            padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 15px; transition: transform .15s, box-shadow .2s;
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+            padding: 12px 24px; border-radius: 8px; font-weight: 500; font-size: 15px; transition: background .15s;
         }
-        .btn-primary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; box-shadow: 0 10px 30px rgba(79,70,229,.35); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(79,70,229,.45); }
-        .btn-ghost { background: #fff; color: #4f46e5; border: 1px solid #c7d2fe; }
-        .btn-ghost:hover { transform: translateY(-2px); }
-        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 10px 0 60px; }
-        .feature { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 22px; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
-        .feature .ic { font-size: 26px; }
-        .feature h3 { margin: 12px 0 8px; font-size: 16px; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-ghost { background: #fff; color: #2563eb; border: 1px solid #d1d5db; }
+        .btn-ghost:hover { background: #f8fafc; }
+        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 8px 0 60px; }
+        .feature { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+        .feature h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
         .feature p { margin: 0; color: #64748b; font-size: 14px; line-height: 1.6; }
-        footer { text-align: center; padding: 22px; color: #94a3b8; font-size: 13px; }
-        footer a { color: #6366f1; text-decoration: none; }
+        .feature-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            margin-bottom: 14px;
+        }
+        .feature-dot.d1 { background: #2563eb; }
+        .feature-dot.d2 { background: #16a34a; }
+        .feature-dot.d3 { background: #d97706; }
+        footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; }
+        footer a { color: #2563eb; text-decoration: none; }
         footer a:hover { text-decoration: underline; }
-        @media (max-width: 720px) { .features { grid-template-columns: 1fr; } h1 { font-size: 30px; } }
+        @media (max-width: 720px) { .features { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+        @media (prefers-color-scheme: dark) {
+            body { background: #0f172a; color: #e2e8f0; }
+            h1 { color: #f1f5f9; }
+            .lead { color: #94a3b8; }
+            .hero-icon { background: #1e293b; }
+            .hero-icon svg { color: #60a5fa; }
+            .feature { background: #1e293b; border-color: #334155; }
+            .feature h3 { color: #f1f5f9; }
+            .feature p { color: #94a3b8; }
+            .btn-ghost { background: #1e293b; color: #60a5fa; border-color: #334155; }
+            .btn-ghost:hover { background: #334155; }
+            footer { color: #475569; }
+            footer a { color: #60a5fa; }
+            .wrap { background: transparent; }
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
         <div class="hero">
-            <div class="logo">📡</div>
-            <h1>Prometheus → 飞书 告警网关</h1>
-            <p class="lead">一个高性能的 Webhook 服务，接收 Prometheus Alertmanager 告警，格式化成交互式卡片推送至飞书，并提供带登录鉴权的管理后台。</p>
+            <div class="hero-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <h1>Prometheus &rarr; 飞书</h1>
+            <p class="lead">接收 Prometheus Alertmanager 告警通知，格式化成交互式飞书卡片推送至群聊，并提供带登录鉴权的管理后台。</p>
             <div class="cta">
-                <a href="/login" class="btn btn-primary">前往管理后台 →</a>
+                <a href="/login" class="btn btn-primary">进入管理后台 &rarr;</a>
                 <a href="/healthz" class="btn btn-ghost">健康检查</a>
             </div>
         </div>
         <div class="features">
-            <div class="feature"><div class="ic">🔔</div><h3>实时推送</h3><p>将 Alertmanager 告警实时转为美观的飞书卡片，支持 firing / resolved 双状态。</p></div>
-            <div class="feature"><div class="ic">🛠</div><h3>在线配置</h3><p>后台可视化编辑卡片模板与 Webhook 地址，支持环境变量覆盖，便于容器部署。</p></div>
-            <div class="feature"><div class="ic">📜</div><h3>推送日志</h3><p>完整记录历史告警与飞书推送结果（成功 / 失败 / 异常），便于排查问题。</p></div>
+            <div class="feature"><div class="feature-dot d1"></div><h3>实时推送</h3><p>将 Alertmanager 告警实时转为飞书卡片，支持 firing / resolved 双状态颜色。</p></div>
+            <div class="feature"><div class="feature-dot d2"></div><h3>在线配置</h3><p>后台可视化编辑卡片模板与 Webhook 地址，支持环境变量覆盖，便于容器化部署。</p></div>
+            <div class="feature"><div class="feature-dot d3"></div><h3>推送日志</h3><p>完整记录历史告警与飞书推送结果，便于排查问题。</p></div>
         </div>
     </div>
     <footer>
-        在 <a href="https://github.com/muzihuaner/prometheus-webhook-feishu" target="_blank">GitHub</a> 上查看本项目 · MIT License
+        在 <a href="https://github.com/muzihuaner/prometheus-webhook-feishu" target="_blank">GitHub</a> 上查看本项目 &middot; MIT License
     </footer>
 </body>
 </html>

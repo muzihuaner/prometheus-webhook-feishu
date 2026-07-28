@@ -3,49 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 · 管理后台</title>
+    <title>Login &middot; Dashboard</title>
     <style>
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
-            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(900px 500px at 80% -10%, #c7d2fe 0%, transparent 60%),
-                        radial-gradient(800px 400px at 0% 110%, #ddd6fe 0%, transparent 55%), #f1f5f9;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
         }
         .login-card {
-            background: #fff; width: 100%; max-width: 380px; padding: 34px 32px; border-radius: 18px;
-            box-shadow: 0 20px 50px rgba(79,70,229,.18); border: 1px solid #eef2ff;
+            background: #fff;
+            width: 100%;
+            max-width: 360px;
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
         .login-card .brand { text-align: center; margin-bottom: 24px; }
-        .login-card .brand .logo { font-size: 34px; }
-        .login-card .brand h1 { font-size: 19px; margin: 10px 0 2px; color: #1e293b; }
-        .login-card .brand p { font-size: 13px; color: #94a3b8; margin: 0; }
-        label { display: block; font-weight: 600; font-size: 13px; color: #334155; margin: 14px 0 6px; }
+        .login-card .brand h1 { font-size: 18px; margin: 0 0 4px; color: #0f172a; font-weight: 600; }
+        .login-card .brand p { font-size: 13px; color: #64748b; margin: 0; }
+        label { display: block; font-weight: 500; font-size: 13px; color: #475569; margin: 14px 0 6px; }
         input[type="text"], input[type="password"] {
-            width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc;
-            transition: border-color .15s, box-shadow .15s, background .15s;
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color .15s, box-shadow .15s;
         }
-        input:focus { border-color: #4f46e5; background: #fff; outline: 0; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+        input:focus { border-color: #2563eb; outline: 0; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
         .submit {
-            width: 100%; margin-top: 22px; padding: 13px; border: none; border-radius: 10px; cursor: pointer;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 15px; font-weight: 700;
-            box-shadow: 0 8px 22px rgba(79,70,229,.35); transition: transform .12s;
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #2563eb;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background .15s;
         }
-        .submit:hover { transform: translateY(-1px); }
-        .flash { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
-        .flash.error { background: #fee2e2; color: #7f1d1d; border: 1px solid #fecaca; }
-        .flash.success { background: #dcfce7; color: #14532d; border: 1px solid #bbf7d0; }
+        .submit:hover { background: #1d4ed8; }
+        .flash { padding: 11px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; border: 1px solid transparent; }
+        .flash.error { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }
+        .flash.success { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
         .back { text-align: center; margin-top: 18px; }
-        .back a { color: #6366f1; font-size: 13px; text-decoration: none; }
-        .back a:hover { text-decoration: underline; }
+        .back a { color: #64748b; font-size: 13px; text-decoration: none; }
+        .back a:hover { color: #2563eb; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #0f172a; }
+            .login-card { background: #1e293b; border-color: #334155; }
+            .login-card .brand h1 { color: #f1f5f9; }
+            .login-card .brand p { color: #94a3b8; }
+            label { color: #94a3b8; }
+            input[type="text"], input[type="password"] { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+            input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,.2); }
+            .submit { background: #2563eb; }
+            .submit:hover { background: #1d4ed8; }
+            .back a { color: #64748b; }
+            .back a:hover { color: #60a5fa; }
+        }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="brand">
-            <div class="logo">📡</div>
             <h1>管理后台登录</h1>
-            <p>Prometheus → 飞书 告警网关</p>
+            <p>Prometheus &rarr; 飞书</p>
         </div>
         {{if .FlashMessage}}<div class="flash {{.FlashKind}}">{{.FlashMessage}}</div>{{end}}
         <form method="post">
@@ -55,7 +86,7 @@
             <input type="password" id="password" name="password" placeholder="请输入密码" required>
             <button type="submit" class="submit">登录</button>
         </form>
-        <div class="back"><a href="/">← 返回首页</a></div>
+        <div class="back"><a href="/">&larr; 返回首页</a></div>
     </div>
 </body>
 </html>

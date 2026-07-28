@@ -3,30 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>配置管理</title>
+    <title>配置管理 &middot; 管理后台</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
     <style>
         {{template "layoutStyles" .}}
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-group { display: flex; flex-direction: column; }
         .form-group.full { grid-column: 1 / -1; }
-        label { font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #334155; }
+        label { font-weight: 500; margin-bottom: 6px; font-size: 13px; color: #475569; }
         input[type="text"] {
-            width: 100%; padding: 11px 13px; border: 1px solid var(--border);
-            border-radius: 9px; font-size: 14px; background: #f8fafc;
-            transition: border-color .15s, box-shadow .15s, background .15s;
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: var(--radius); font-size: 14px; background: #fff;
+            transition: border-color .15s, box-shadow .15s;
         }
         input[type="text"]:focus {
-            border-color: var(--primary); background: #fff; outline: 0;
-            box-shadow: 0 0 0 3px rgba(79,70,229,.15);
+            border-color: var(--primary); outline: 0;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.15);
         }
-        .CodeMirror { border: 1px solid var(--border); border-radius: 9px; height: 420px; font-size: 13px; }
-        .actions { display: flex; gap: 12px; margin-top: 22px; align-items: center; }
-        .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; line-height: 1.6; }
-        .hint code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; color: #4338ca; }
+        .CodeMirror { border: 1px solid var(--border); border-radius: var(--radius); height: 400px; font-size: 13px; }
+        .CodeMirror.cm-s-monokai { border-color: #2d2d2d; }
+        .actions { display: flex; gap: 10px; margin-top: 20px; align-items: center; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .hint { font-size: 13px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.6; }
+        .hint code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #4338ca; font-size: 12px; }
+        .toast {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            padding: 14px 20px; border-radius: var(--radius); font-size: 14px;
+            border: 1px solid transparent; box-shadow: 0 4px 20px rgba(0,0,0,.15);
+            transform: translateX(120%); transition: transform .3s ease;
+            max-width: 400px;
+        }
+        .toast.open { transform: translateX(0); }
+        .toast.success { background: var(--success-bg); color: #14532d; border-color: #bbf7d0; }
+        .toast.error { background: var(--danger-bg); color: #7f1d1d; border-color: #fecaca; }
     </style>
 </head>
 <body>
@@ -34,7 +46,7 @@
     <main class="content">
         {{template "flash" .}}
         <section class="card">
-            <h2>⚙️ 基础配置 <span class="sub">修改后点击保存即可生效</span></h2>
+            <h2>基础配置 <span class="sub">修改后点击保存即可生效</span></h2>
             <form id="config-form" action="/save" method="post">
                 <div class="form-grid">
                     <div class="form-group full">
@@ -56,12 +68,12 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <button type="submit" class="btn btn-success">💾 保存配置</button>
-                    <button type="button" class="btn btn-primary" onclick="document.getElementById('test-form').submit();">🚀 发送测试</button>
+                    <button type="submit" class="btn btn-primary">保存配置</button>
+                    <button type="button" class="btn btn-success" id="test-btn">发送测试</button>
                 </div>
             </form>
-            <form id="test-form" action="/test" method="post" style="display:none;"></form>
         </section>
+        <div id="toast" class="toast"></div>
     </main>
     <script>
         var editor = CodeMirror.fromTextArea(document.getElementById("template"), {
@@ -71,7 +83,28 @@
             matchBrackets: true,
             autoCloseBrackets: true
         });
-        editor.refresh();
+        function showToast(msg, kind) {
+            var el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + kind + ' open';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(function() { el.classList.remove('open'); }, 4000);
+        }
+        document.getElementById('test-btn').onclick = function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = '发送中…';
+            fetch('/test', { method: 'POST' }).then(function(res) {
+                return res.json();
+            }).then(function(data) {
+                showToast(data.message, data.status === 'success' ? 'success' : 'error');
+            }).catch(function() {
+                showToast('发送失败，请检查配置', 'error');
+            }).finally(function() {
+                btn.disabled = false;
+                btn.textContent = '发送测试';
+            });
+        };
     </script>
 </body>
 </html>
