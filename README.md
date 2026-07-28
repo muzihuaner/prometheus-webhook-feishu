@@ -104,6 +104,9 @@ PORT=5000 \
 ### 方式一：docker compose（推荐）
 
 ```bash
+git clone https://github.com/muzihuaner/prometheus-webhook-feishu.git
+cd prometheus-webhook-feishu
+
 cp config.example.json config.json   # 先创建配置文件
 docker compose up -d
 ```
@@ -115,7 +118,10 @@ docker compose up -d
 ### 方式二：手动构建运行
 
 ```bash
-cd go
+git clone https://github.com/muzihuaner/prometheus-webhook-feishu.git
+cd prometheus-webhook-feishu
+
+
 docker build -t prometheus-webhook-feishu .
 docker run -d -p 5000:5000 \
   -v $(pwd)/config.json:/app/config.json \
