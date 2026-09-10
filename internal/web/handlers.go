@@ -216,7 +216,7 @@ func (h *Handlers) recordAndSend(payload feishu.WebhookPayload, defaultName stri
 		rec.AlertName = defaultName
 	}
 
-	card, err := feishu.BuildCard(payload.Alerts, status, h.cfg)
+	card, err := feishu.BuildCard(&payload, h.cfg)
 	if err != nil {
 		rec.PushStatus = store.PushError
 		rec.Detail = "构建卡片失败: " + err.Error()

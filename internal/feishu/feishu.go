@@ -26,32 +26,42 @@ type Alert struct {
 type WebhookPayload struct {
 	Status       string            `json:"status"`
 	Alerts       []Alert           `json:"alerts"`
+	GroupLabels  map[string]string `json:"groupLabels"`
 	CommonLabels map[string]string `json:"commonLabels"`
 	ExternalURL  string            `json:"externalURL"`
+	Receiver     string            `json:"receiver"`
 }
 
 // placeholderRe 匹配 {key} 形式的占位符（单词字符）。
 var placeholderRe = regexp.MustCompile(`\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
-// fillTemplate 递归遍历模板结构，将其中的 {key} 占位符替换为 values 中的值。
-func fillTemplate(tmpl interface{}, values map[string]string) interface{} {
+// fillTemplate 递归遍历模板结构：字符串值先渲染 Go 模板再做 {key} 占位符替换。
+func fillTemplate(tmpl interface{}, values map[string]string, ctx *tmplCtx) (interface{}, error) {
 	switch v := tmpl.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(v))
 		for k, val := range v {
-			out[k] = fillTemplate(val, values)
+			r, err := fillTemplate(val, values, ctx)
+			if err != nil {
+				return nil, err
+			}
+			out[k] = r
 		}
-		return out
+		return out, nil
 	case []interface{}:
 		out := make([]interface{}, len(v))
 		for i, val := range v {
-			out[i] = fillTemplate(val, values)
+			r, err := fillTemplate(val, values, ctx)
+			if err != nil {
+				return nil, err
+			}
+			out[i] = r
 		}
-		return out
+		return out, nil
 	case string:
-		return replacePlaceholders(v, values)
+		return renderString(v, values, ctx)
 	default:
-		return tmpl
+		return tmpl, nil
 	}
 }
 
@@ -83,8 +93,10 @@ func formatTime(s string) string {
 	return t.In(cst).Format("2006-01-02 15:04:05")
 }
 
-// BuildCard 依据告警列表与状态构建飞书交互式卡片 payload。
-func BuildCard(alerts []Alert, status string, cfg *config.ConfigState) (map[string]interface{}, error) {
+// BuildCard 依据 webhook payload 构建飞书交互式卡片。
+func BuildCard(payload *WebhookPayload, cfg *config.ConfigState) (map[string]interface{}, error) {
+	status := payload.Status
+	alerts := payload.Alerts
 	raw := cfg.Template()
 	tmpl, ok := raw.(map[string]interface{})
 	if !ok {
@@ -112,9 +124,24 @@ func BuildCard(alerts []Alert, status string, cfg *config.ConfigState) (map[stri
 		headerTitle = resolvedTitle
 	}
 
+	// 通知级数据只需构造一次
+	notifAlerts := make(alertList, 0, len(alerts))
+	for _, a := range alerts {
+		notifAlerts = append(notifAlerts, tmplAlert{
+			Status:       a.Status,
+			StartsAt:     a.StartsAt,
+			EndsAt:       a.EndsAt,
+			GeneratorURL: a.GeneratorURL,
+			Labels:       KV(a.Labels),
+			Annotations:  KV(a.Annotations),
+		})
+	}
+	groupLabels := KV(payload.GroupLabels)
+	commonLabels := KV(payload.CommonLabels)
+
 	elementsSrc, _ := card["elements"].([]interface{})
 	allElements := make([]interface{}, 0, len(elementsSrc)*len(alerts))
-	for _, alert := range alerts {
+	for i, alert := range alerts {
 		labels := alert.Labels
 		if labels == nil {
 			labels = map[string]string{}
@@ -132,8 +159,20 @@ func BuildCard(alerts []Alert, status string, cfg *config.ConfigState) (map[stri
 			"card_color":   cardColor,
 			"header_title": headerTitle,
 		}
+		ctx := &tmplCtx{
+			tmplAlert:    notifAlerts[i],
+			Alerts:       notifAlerts,
+			GroupLabels:  groupLabels,
+			CommonLabels: commonLabels,
+			ExternalURL:  payload.ExternalURL,
+			Receiver:     payload.Receiver,
+		}
 		for _, el := range elementsSrc {
-			allElements = append(allElements, fillTemplate(el, values))
+			rendered, err := fillTemplate(el, values, ctx)
+			if err != nil {
+				return nil, err
+			}
+			allElements = append(allElements, rendered)
 		}
 	}
 

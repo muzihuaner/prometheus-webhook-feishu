@@ -1,0 +1,7 @@
+app
+docs
+deploy.md
+config.json
+*.tgz
+helm/values-*.yaml
+.DS_Store

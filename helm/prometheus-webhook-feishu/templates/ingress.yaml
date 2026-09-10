@@ -1,0 +1,69 @@
+{{- if .Values.ingress.enabled -}}
+{{- if semverCompare ">=1.19.0-0" .Capabilities.KubeVersion.Version -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "prometheus-webhook-feishu.fullname" . }}
+  labels:
+    {{- include "prometheus-webhook-feishu.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "prometheus-webhook-feishu.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
+{{- else -}}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "prometheus-webhook-feishu.fullname" . }}
+  labels:
+    {{- include "prometheus-webhook-feishu.labels" . | nindent 4 }}
+  {{- $annotations := deepCopy (.Values.ingress.annotations | default dict) }}
+  {{- if .Values.ingress.className }}
+  {{- $_ := set $annotations "kubernetes.io/ingress.class" .Values.ingress.className }}
+  {{- end }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            backend:
+              serviceName: {{ include "prometheus-webhook-feishu.fullname" $ }}
+              servicePort: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

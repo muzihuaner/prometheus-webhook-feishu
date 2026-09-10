@@ -1,0 +1,8 @@
+apiVersion: v2
+name: prometheus-webhook-feishu
+description: Prometheus Alertmanager Webhook，将告警格式化为飞书交互式卡片推送，带 Web 管理后台
+type: application
+version: 0.1.1
+appVersion: "latest"
+kubeVersion: ">=1.16.0-0"
+home: https://github.com/muzihuaner/prometheus-webhook-feishu

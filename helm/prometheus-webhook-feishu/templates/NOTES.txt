@@ -1,0 +1,12 @@
+prometheus-webhook-feishu 已部署到 namespace {{ .Release.Namespace }}。
+
+1. Alertmanager webhook 接收地址（集群内）:
+   http://{{ include "prometheus-webhook-feishu.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/webhook
+
+2. 访问管理后台:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "prometheus-webhook-feishu.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+   浏览器打开 http://127.0.0.1:{{ .Values.service.port }}，使用 config.USERNAME（默认 {{ .Values.config.USERNAME }}）登录。
+{{- if not .Values.sessionSecret }}
+
+3. 提示: 未设置 sessionSecret，Pod 重启后已登录会话会失效。
+{{- end }}

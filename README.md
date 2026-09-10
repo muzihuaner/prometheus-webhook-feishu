@@ -40,6 +40,7 @@ go/
 │           └── alerts.html
 ├── Dockerfile            # 多阶段构建镜像
 ├── docker-compose.yml    # 编排文件
+├── helm/prometheus-webhook-feishu  # Helm chart（K8s 部署）
 ├── go.mod
 ├── config.example.json   # 配置示例
 ├── config.json           # 实际配置（需自行创建）
@@ -64,7 +65,7 @@ cp config.example.json config.json
 | `USERNAME` / `PASSWORD` | 管理后台登录凭据 |
 | `FEISHU_WEBHOOK_URL` | 飞书机器人 Webhook 地址 |
 | `FIRING_TITLE` / `RESOLVED_TITLE` | 告警 / 恢复时的卡片标题 |
-| `FEISHU_CARD_TEMPLATE` | 飞书卡片模板（支持 `{alertname}`、`{severity}`、`{instance}`、`{description}`、`{start_time}`、`{card_color}`、`{header_title}` 占位符） |
+| `FEISHU_CARD_TEMPLATE` | 飞书卡片模板（支持 `{alertname}`、`{severity}`、`{instance}`、`{description}`、`{start_time}`、`{card_color}`、`{header_title}` 占位符）；支持 `{占位符}` 与 Go template 双语法，详见下文 |
 
 ### 2. 本地运行（需安装 Go 1.21+）
 
@@ -130,6 +131,24 @@ docker run -d -p 5000:5000 \
   prometheus-webhook-feishu
 ```
 
+## Helm 部署（Kubernetes）
+
+```bash
+helm install prometheus-webhook-feishu helm/prometheus-webhook-feishu \
+  --set config.FEISHU_WEBHOOK_URL="https://open.feishu.cn/open-apis/bot/v2/hook/xxxx" \
+  --set config.PASSWORD="your-password"
+```
+
+说明：
+
+- 配置以 values 中的 `config` 为唯一来源，渲染为 ConfigMap 并经 initContainer 拷贝到可写区；管理后台在线保存的修改仅在本 Pod 生命周期内生效，重启后恢复为 chart 配置。
+- `helm upgrade` 修改 `config` 会触发 Pod 滚动重启以应用新配置。
+- 告警历史（alerts.json）保存在 emptyDir 中，Pod 重建后清空。
+- 建议设置 `sessionSecret` 固定值，避免 Pod 重启后登录会话失效。
+- 开启 Ingress：`--set ingress.enabled=true --set 'ingress.hosts[0].host=feishu.example.com'`。
+- 查看全部可配置项：`helm show values helm/prometheus-webhook-feishu`。
+- 修改配置建议使用 values 文件（嵌套的 `FEISHU_CARD_TEMPLATE` 用 `--set` 不便），升级：`helm upgrade prometheus-webhook-feishu helm/prometheus-webhook-feishu -f my-values.yaml`；卸载：`helm uninstall prometheus-webhook-feishu`。
+
 ## 配置 Alertmanager
 
 在 `alertmanager.yml` 中添加指向本服务的接收器：
@@ -159,6 +178,76 @@ receivers:
 - **告警历史**（`/alerts`）：查看每次接收到的告警与飞书推送结果（成功 / 失败 / 异常），支持按推送状态、告警类型筛选与关键字搜索，点击「查看」可展开单条告警的明细（含每条子告警的等级、实例与摘要），亦可一键清空历史。
 
 > 告警历史默认持久化到 `alerts.json`，进程重启后依然保留（最多保留 500 条，可在 `store.New` 调整）。
+
+## 卡片模板：Go template 语法
+
+`FEISHU_CARD_TEMPLATE` 中的**字符串值**除了支持传统的 `{占位符}` 替换，还支持 Go template（`text/template`）语法：
+
+- 字符串中**含 `{{`**：先按 Go 模板渲染，渲染结果再执行 `{占位符}` 替换 —— 同一字符串里两种语法可以混用；
+- 字符串中**不含 `{{`**：行为与旧版完全一致，纯 `{占位符}` 替换，**完全向后兼容**。
+
+### 示例
+
+贴近真实场景：按 `cluster` / `namespace` 条件映射「告警项目」名称（类似从钉钉机器人迁移过来的写法），并在卡片中统计 firing 数量、遍历当前告警的标签。注意 JSON 中模板写在**单行字符串**内，换行用 `\n` 转义，引号需转义为 `\"`：
+
+```json
+{
+  "header": {
+    "title": { "tag": "plain_text", "content": "{header_title}（当前 firing：{{ .Alerts.Firing | len }} 条）" }
+  },
+  "elements": [
+    { "tag": "div", "text": { "tag": "lark_md", "content": "**告警项目**：{{ if and (eq .Labels.cluster \"prod-cluster\") (eq .Labels.namespace \"prod\") }}项目A-生产{{ else if eq .Labels.cluster \"prod-cluster\" }}项目A-其他环境{{ else }}默认项目{{ end }}" } },
+    { "tag": "div", "text": { "tag": "lark_md", "content": "**标签**：{{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}" } },
+    { "tag": "div", "text": { "tag": "lark_md", "content": "**开始时间**：{{ .StartsAt | date \"2006-01-02 15:04:05\" }}" } }
+  ]
+}
+```
+
+### 上下文字段
+
+模板中的 `.` 是「当前这条告警」，并附带通知级信息：
+
+告警级字段（卡片 elements 会按告警逐条复制，每条告警各自渲染一次）：
+
+| 字段 | 说明 |
+| --- | --- |
+| `.Status` | 当前告警状态：`firing` / `resolved` |
+| `.Labels` | 告警标签（KV），支持 `.SortedPairs`（按名称排序的 `{Name, Value}` 列表）、`.Names`、`.Values`、`.Remove` |
+| `.Annotations` | 告警注解（KV），方法同 `.Labels` |
+| `.StartsAt` | 告警开始时间（RFC3339 字符串），常配合 `date` 函数格式化 |
+| `.EndsAt` | 告警结束时间 |
+| `.GeneratorURL` | 告警规则来源 URL |
+
+通知级字段（整组告警的信息）：
+
+| 字段 | 说明 |
+| --- | --- |
+| `.Alerts` | 本次通知包含的全部告警，`.Alerts.Firing` / `.Alerts.Resolved` 为按状态过滤的子集 |
+| `.GroupLabels` | 分组标签（KV），方法同 `.Labels` |
+| `.CommonLabels` | 所有告警共有的标签（KV），方法同 `.Labels` |
+| `.ExternalURL` | Alertmanager 外部访问地址 |
+| `.Receiver` | 接收器名称 |
+
+### 函数
+
+| 函数 | 说明 | 示例 |
+| --- | --- | --- |
+| `toUpper` / `toLower` | 大小写转换 | `{{ .Labels.severity | toUpper }}` |
+| `join` | 用分隔符拼接字符串列表 | `{{ .Labels.Names | join "," }}` |
+| `html` | HTML 转义 | `{{ .Annotations.description | html }}` |
+| `markdown` | 转义飞书 lark_md 特殊字符 | `{{ .Annotations.summary | markdown }}` |
+| `date` | 按布局格式化时间（转换为东八区 UTC+8） | `{{ .StartsAt | date "2006-01-02 15:04:05" }}` |
+
+`eq`、`ne`、`lt`、`gt`、`and`、`or`、`not`、`range`、`len`、`index`、`if/else` 等为 Go 模板内置，直接使用即可。
+
+### 书写约定
+
+1. **单行书写**：JSON 字符串值内的模板必须写成单行，换行用 `\n` 转义（管理后台的模板编辑框同理）。
+2. **面向当前告警**：模板默认作用于「当前这条告警」，卡片的 elements 会按告警逐条复制。`{{ range .Alerts }}` 仅用于**统计类**场景（如标题中 `{{ .Alerts.Firing | len }}`）；在 elements 里遍历全部告警会导致卡片内容 N×M 重复，请勿这样使用。
+
+### 容错
+
+模板写错（解析或渲染失败）时，该次推送会记为 **error** 历史（可在「告警历史」中查看原因），**不会**发出残缺卡片；修正模板后重试即可。
 
 ## 健康检查
 
